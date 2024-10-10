@@ -73,7 +73,7 @@ class FemtoDreamObjectSelection
       tempVec.push_back(FemtoDreamSelection<selValDataType, selVariable>(selVal, selVar, selType));
     }
     setSelection(tempVec);
-  }
+  }//selVariable可以是枚举类型或者常量类型
 
   /// Pass an std::vector of selection values to the selection class
   /// \param sels std::vector containing FemtoDreamSelections

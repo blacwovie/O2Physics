@@ -38,6 +38,10 @@ struct CFTutorialTask2 {
   // Defining filters
   Filter collisionFilter = (aod::collision::posZ > ConfZvtxMin) && (aod::collision::posZ < ConfZvtxMax);
   Filter trackFilter = (aod::femtodreamparticle::eta > ConfEtaMin) && (aod::femtodreamparticle::eta < ConfEtaMax) && (aod::femtodreamparticle::pt > ConfPtMin) && (aod::femtodreamparticle::pt < ConfPtMax);
+/*
+collisionFilter 是一个用于事件选择的过滤器，只选择符合顶点位置在 ConfZvtxMin 到 ConfZvtxMax 之间的碰撞。
+trackFilter 是一个用于轨迹选择的过滤器，基于伪快度 (eta) 和横动量 (pt) 的条件过滤粒子。*/
+
 
   // Apply filters
   using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
@@ -45,6 +49,14 @@ struct CFTutorialTask2 {
 
   using FilteredFDParts = soa::Filtered<aod::FDParticles>;
   using FilteredFDPart = FilteredFDParts::iterator;
+  
+  /*这些类型定义用于存储通过过滤器后的事件和粒子：
+FilteredFDCollisions 是过滤后的事件集合。
+FilteredFDCollision 是事件集合的迭代器。
+FilteredFDParts 是过滤后的粒子集合。
+FilteredFDPart 是粒子集合的迭代器。
+*/
+
 
   // selections for particles
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};

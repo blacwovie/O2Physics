@@ -37,7 +37,7 @@ enum CollisionBinning {
   kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
   kNCollisionBinning
 };
-
+//DECLARE_SOA_COLUMN 是一个宏定义，通常用于声明 结构化数组
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
@@ -52,15 +52,16 @@ DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit f
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
-DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
+DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",//FDCollisions是表的名称，AOD是数据的命名空间，"FDCOLLISION" 是表在磁盘或内存中的标识符
                   o2::soa::Index<>,
-                  o2::aod::collision::PosZ,
+                  o2::aod::collision::PosZ,//o2::aod::collision::PosZ 是该表的第一列，表示碰撞在 Z 轴方向上的位置
                   femtodreamcollision::MultV0M,
                   femtodreamcollision::MultNtr,
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
-
+/*using FDCollision = FDCollisions::iterator;声明了一个 类型别名。它将 FDCollision 定义为 FDCollisions 表中的 迭代器类型。
+迭代器用于遍历表中的每一行数据，类似于 C++ STL 容器中的迭代器。通过这个迭代器，用户可以逐行访问 FDCollisions 表中的每个碰撞事件的数据。*/
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
                   femtodreamcollision::BitMaskTrackTwo,
