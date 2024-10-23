@@ -91,7 +91,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                dcaMin(9999999.),
                                nSigmaPIDMax(9999999.),
                                nSigmaPIDOffsetTPC(0.),
-                               nSigmaPIDOffsetTOF(0.) {}//类的构造函数，它的主要作用是初始化类的成员变量
+                               nSigmaPIDOffsetTOF(0.) {}
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -111,7 +111,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
     for (o2::track::PID pid : tmpPids) {
       mPIDspecies.push_back(pid);
     }
-  }//作用是从传入的 PID 列表中提取 PID 数据，并将它们存储在 mPIDspecies 中
+  }
 
   /// Computes the n_sigma for a track and a particle-type hypothesis in the TPC
   /// \tparam T Data type of the track
@@ -540,10 +540,10 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
         case (femtoDreamTrackSelection::kPIDnSigmaMax):
           break;
       }
-      sel.checkSelectionSetBit(observable, output, counter, mHistogramRegistry);//判断某个筛选条件是否满足，如果满足，则在 output 中相应的位上进行设置
+      sel.checkSelectionSetBit(observable, output, counter, mHistogramRegistry);
     }
   }
-  return {output, outputPID};//output存储非 PID 相关的筛选结果，outputPID存储与 PID 相关的筛选结果
+  return {output, outputPID};
 }
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, bool isHF, typename T>

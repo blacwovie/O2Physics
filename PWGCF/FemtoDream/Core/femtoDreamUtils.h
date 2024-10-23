@@ -38,16 +38,15 @@ enum kDetector { kTPC,
 /// \param vNsigma vector with the number of sigmas of interest
 /// \return kPIDselection corresponding to n-sigma
 int getPIDselection(float nSigma, std::vector<float> vNsigma)
-{//返回 vNsigma 中与 nSigma 对应的索引。如果没有找到精确匹配的 n-sigma 值，则返回最接近的一个值
-  std::sort(vNsigma.begin(), vNsigma.end(), std::greater<>());//比较器对向量中的 n-sigma 值进行降序排列。这样，较大的 n-sigma 值会在向量的前面。
+{
+  std::sort(vNsigma.begin(), vNsigma.end(), std::greater<>());
   auto it = std::find(vNsigma.begin(), vNsigma.end(), nSigma);
-  //在 vNsigma 中查找与 nSigma 完全匹配的值。如果找到了，it 将指向匹配的元素；否则，it 将是 vNsigma.end()，表示没有找到目标值
   if (it == vNsigma.end()) {
     it = vNsigma.begin() + 1;
     LOG(warn) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << *(it);
-  }//如果 nSigma 不存在于 vNsigma 中，程序会说明输入的 nSigma 是无效的，并且将 it 指向 vNsigma 的第二个元素。
+  }
   return std::distance(vNsigma.begin(), it);
-}//std::distance 计算 it 和 vNsigma.begin() 之间的距离，返回的是 it 的索引，即最接近 nSigma 值的位置。
+}
 
 /// function that checks whether the PID selection specified in the vectors is
 /// fulfilled
@@ -63,13 +62,12 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType pidcut,
                    int nSpecies,
                    float nSigma,
                    std::vector<float> vNsigma,
-                   kDetector iDet)//iDet：使用的检测器类型的枚举值kDetector，表示只用 TPC 检测器或同时用 TPC 和 TOF 进行粒子鉴别
+                   kDetector iDet)
 {
   int iNsigma = getPIDselection(nSigma, vNsigma);
   int nDet = static_cast<int>(kDetector::kNdetectors);
   int bit_to_check = 1 + (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
   return ((pidcut >> (bit_to_check)) & 1) == 1;
-  //如果结果为 1，说明该粒子满足 PID 选择条件，函数返回 true；如果为 0，返回 false。
 };
 
 /// function that checks whether the PID selection specified in the vectors is fulfilled, depending on the momentum TPC or TPC+TOF PID is conducted
@@ -108,7 +106,6 @@ inline float getMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  //这个函数根据粒子的 PDG 编号返回粒子的质量。例如，PDG 码 211 代表正电介子（π+），因此函数会返回相应的质量
   float mass = 0;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {

@@ -49,7 +49,7 @@ struct CFTutorialTask3 {
 
   // selections for particles
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
-  //用于控制是否分析相同种类的粒子对。默认值为false
+
   // TODO:
   // add configurables for PID selection of particles similar to FemtoDreamPairTaskTrackTrack
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
@@ -70,13 +70,8 @@ struct CFTutorialTask3 {
   HistogramRegistry HistRegistry{"FemtoTutorial", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   /// mixing
-  SliceCache cache;//SliceCache 是一种缓存结构
+  SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  //Preslice 的作用是在对粒子进行操作之前，按照某个标识（在这里是 fdCollisionId）将粒子分组。
-
-  //fdCollisionId 是每个粒子对应的碰撞事件的唯一标识符，通常用于将来自同一碰撞事件的粒子关联起来，
-  //每个 fdCollisionId 对应一个独立的碰撞事件，属于同一事件的所有粒子将被分为同一个分组。
-
 
   // create analysis objects like histograms
   void init(o2::framework::InitContext&)
@@ -107,7 +102,7 @@ struct CFTutorialTask3 {
     // generate partition of particels
     auto GroupPartsOne = PartsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto GroupPartsTwo = PartsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    //col.globalIndex()：这是当前处理的碰撞事件的全局索引。通过这个索引，代码能找到所有与当前事件相关的粒子。
+
     /// QA for particle 1
     for (auto& part : GroupPartsOne) {
 
@@ -124,7 +119,7 @@ struct CFTutorialTask3 {
 
     /// QA for particle 2
     /// skip QA if particle 1 & 2 are the same
-    if (ConfIsSame.value == false) {//ConfIsSame.value为啥这里没有改变过
+    if (ConfIsSame.value == false) {
       for (auto& part : GroupPartsTwo) {
         // TODO:
         // add function for PID selection from FemtoUtils

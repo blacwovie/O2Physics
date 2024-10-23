@@ -110,7 +110,6 @@ struct femtoDreamPairTaskTrackTrack {
   } Track1;
 
   /// Partition for particle 1
-  //一个数据分区操作，它定义了对 aod::FDParticles 数据集合的筛选条件。PartitionTrk1 的目的是为 Track1 粒子选择特定的条件，
   Partition<aod::FDParticles> PartitionTrk1 =
     (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
     (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
@@ -237,8 +236,7 @@ struct femtoDreamPairTaskTrackTrack {
     }
     eventHisto.init(&Registry, Option.IsMC);
     trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
-    //multTempFit，TrackpT，TempFitVar都是axis的configurable，
-    if (!Option.SameSpecies) {//如果不是同一种粒子，则初始化ParTwo直方图
+    if (!Option.SameSpecies) {
       trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
     }
 
@@ -290,9 +288,8 @@ struct femtoDreamPairTaskTrackTrack {
             containsNameValuePair(device.options, "Track2.EtaMax", Track2.EtaMax.value) &&
             containsNameValuePair(device.options, "Track2.TempFitVarMin", Track2.TempFitVarMin.value) &&
             containsNameValuePair(device.options, "Track2.TempFitVarMax", Track2.TempFitVarMax.value)) {
-          mask.set(index);//每当一个设备的选项与当前分析中的配置相匹配时，程序会调用 mask.set(index) 来设置 mask 的某一位
+          mask.set(index);
           BitMask = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
-          //将 std::bitset 类型的 mask 转换为 femtodreamcollision::BitMaskType 类型，并将其赋值给 BitMask 变量
           LOG(info) << "Configuration matched for device: " << device.name;
           LOG(info) << "Bitmask for collisions: " << mask.to_string();
           break;
@@ -327,8 +324,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType, typename Collision>
   void doSameEvent(PartitionType SliceTrk1, PartitionType SliceTrk2, PartType parts, Collision col)
-  {//SliceTrk1，SliceTrk2输入两个粒子轨迹，Collision col表示当前的碰撞事件
-  ///两个粒子基础信息分别填入直方图，如果不是同种粒子就分别填两个
+  {
     for (auto& part : SliceTrk1) {
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
@@ -339,9 +335,9 @@ struct femtoDreamPairTaskTrackTrack {
       }
     }
 
-    /// Now build the combinations构建粒子对
+    /// Now build the combinations
     float rand = 0.;
-    if (Option.SameSpecies.value) {//同种粒子
+    if (Option.SameSpecies.value) {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (Option.CPROn.value) {
           if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
@@ -354,17 +350,14 @@ struct femtoDreamPairTaskTrackTrack {
         }
         if (Option.RandomizePair.value) {
           rand = random->Rndm();
-          //如果启用了随机化粒子对（Option.RandomizePair），则通过生成随机数 rand 来决定粒子对的顺序，以随机化 p1 和 p2 的顺序。
         }
         if (rand <= 0.5) {
           sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
         } else {
           sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-
-        //setpair里有get kstar
         }
       }
-    } else {//不同粒子
+    } else {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (Option.CPROn.value) {
           if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
@@ -375,7 +368,6 @@ struct femtoDreamPairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        //不随机顺序
         sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
       }
     }

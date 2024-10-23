@@ -109,7 +109,7 @@ class FemtoDreamSelection
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {
-      cutContainer |= 1UL << counter;//如果筛选条件满足，将 cutContainer 的第 counter 位设置为 1。1UL << counter 是将 1 左移 counter 位的操作，而 |= 操作符将 cutContainer 对应位设置为 1（保留其他位的值不变）
+      cutContainer |= 1UL << counter;
       if (registry) {
         registry->fill(HIST("AnalysisQA/CutCounter"), 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType));
       }

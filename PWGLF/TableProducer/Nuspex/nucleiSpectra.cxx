@@ -537,11 +537,10 @@ struct nucleiSpectra {
 
       bool selectedTPC[5]{false}, goodToAnalyse{false};
       std::array<float, 5> nSigmaTPC;
-    //重点
       for (int iS{0}; iS < nuclei::species; ++iS) {
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
-        nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);//自己计算了nsigma
+        nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         nSigmaTPC[iS] = nSigma[0][iS];
         selectedTPC[iS] = (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]);
         goodToAnalyse = goodToAnalyse || selectedTPC[iS];
@@ -599,7 +598,6 @@ struct nucleiSpectra {
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
           continue;
         }
-        //洛伦兹矢量
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
         for (int iPID{0}; iPID < 2; ++iPID) {
@@ -609,7 +607,6 @@ struct nucleiSpectra {
             } else if (iPID) {
               selectedTOF = true;
             }
-            
             if (!cfgCutOnReconstructedRapidity || (y > cfgCutRapidityMin && y < cfgCutRapidityMax)) {
               nuclei::hDCAxy[iPID][iS][iC]->Fill(centrality, fvector.pt(), dcaInfo[0]);
               nuclei::hDCAz[iPID][iS][iC]->Fill(centrality, fvector.pt(), dcaInfo[1]);

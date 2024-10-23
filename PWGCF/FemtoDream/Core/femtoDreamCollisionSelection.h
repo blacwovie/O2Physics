@@ -42,7 +42,7 @@ class FemtoDreamCollisionSelection
   /// \param trig Requested trigger alias
   /// \param checkOffline whether or not to check for offline selection criteria
   void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool addCheckOffline, bool checkRun3)
-  {//用于设置事件选择的cut，要输入
+  {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
@@ -84,12 +84,12 @@ class FemtoDreamCollisionSelection
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
   bool isSelectedCollision(C const& col)
-  {//判断碰撞事件是否符合预设的选择条件
+  {
 
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckIsRun3) {//根据 Run 2 或 Run 3 的设置
+    if (mCheckIsRun3) {
       if (mCheckOffline && !col.sel8()) {
         return false;
       }
@@ -107,7 +107,7 @@ class FemtoDreamCollisionSelection
         return false;
       }
     }
-    return true;//通过所有选择条件时返回 true
+    return true;
   }
 
   template <typename C, typename T, typename TC>
@@ -124,7 +124,7 @@ class FemtoDreamCollisionSelection
 
   template <typename C, typename V, typename VC, typename T>
   bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& /*Tracks*/)
-  {//判断是否没有选中的轨迹。如果轨迹中没有符合最小选择条件的轨迹，返回 true
+  {
     // check if there is no selected V0
     for (auto const& V0 : V0s) {
       auto postrack = V0.template posTrack_as<T>();
@@ -167,7 +167,7 @@ class FemtoDreamCollisionSelection
   template <typename T1, typename T2>
   float computeSphericity(T1 const& /*col*/, T2 const& /*tracks*/)
   {
-    return 2.f;//尚未实现
+    return 2.f;
   }
 
  private:
