@@ -16,32 +16,36 @@
 /// \since September 15, 2023
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
@@ -85,9 +89,9 @@ enum {
   kSpOther,
   kSpStrangeDecay,
   kBkg,
-  kFake,
   kSpNotPrimary,
   kSpAll,
+  kFake,
   kSpeciesend
 };
 
@@ -197,6 +201,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
   Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyVtxCut{"isApplyVtxCut", false, "Enable vertex cut condition"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
   Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
@@ -207,6 +212,11 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, ""};
+
+  Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
+  Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
+  Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
 
   void init(InitContext const&)
   {
@@ -353,9 +363,22 @@ struct HeavyionMultiplicity {
       histos.add("hRecMCvertexZ", "hRecMCvertexZ", kTH1D, {axisVtxZ}, false);
       histos.add("hRecMCvtxzcent", "hRecMCvtxzcent", kTH3D, {axisVtxZ, centAxis, axisOccupancy}, false);
       histos.add("hRecMCcentrality", "hRecMCcentrality", kTH1D, {axisCent}, false);
+      histos.add("MCCentrality_vs_FT0C", "MCCentrality_vs_FT0C", kTH2F, {axisCent, axisFt0cMult}, true);
       histos.add("hRecMCphivseta", "hRecMCphivseta", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hRecMCdndeta", "hRecMCdndeta", kTHnSparseD, {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisRecTrkType}, false);
       histos.add("etaResolution", "etaResolution", kTH2D, {axisEta, axisDeltaEta});
+    }
+
+    if (doprocessBcData) {
+      histos.add("BcHist", "BcHist", kTH1D, {axisEvent}, false);
+      auto hstat = histos.get<TH1>(HIST("BcHist"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All BCs");
+      x->SetBinLabel(2, "Colliding BCs");
+      x->SetBinLabel(3, "TVX");
+      x->SetBinLabel(4, "FV0OrA");
+      histos.add("BcCentFT0CHist", "BcCentFT0CHist", kTH1D, {axisCent}, false);
+      histos.add("BcCentFT0MHist", "BcCentFT0MHist", kTH1D, {axisCent}, false);
     }
   }
 
@@ -399,6 +422,10 @@ struct HeavyionMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 10);
+    if (isApplyVtxCut && std::abs(col.posZ()) >= vtxRange) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 11);
     return true;
   }
 
@@ -859,7 +886,7 @@ struct HeavyionMultiplicity {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       atLeastOne = true;
@@ -912,11 +939,12 @@ struct HeavyionMultiplicity {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       histos.fill(HIST("hRecMCvertexZ"), RecCol.posZ());
       histos.fill(HIST("hRecMCcentrality"), selColCent(RecCol));
+      histos.fill(HIST("MCCentrality_vs_FT0C"), RecCol.centFT0C(), RecCol.multFT0C());
       histos.fill(HIST("hRecMCvtxzcent"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol));
 
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
@@ -971,6 +999,22 @@ struct HeavyionMultiplicity {
     } // collision loop
   }
 
+  void processBcData(soa::Join<aod::BC2Mults, aod::MultBCs, aod::BCCentFT0Cs, aod::BCCentFT0Ms>::iterator const& multbc)
+  {
+    histos.fill(HIST("BcHist"), 1); // all BCs
+    if (selectCollidingBCs && !multbc.multCollidingBC())
+      return;
+    histos.fill(HIST("BcHist"), 2); // colliding
+    if (selectTVX && !multbc.multTVX())
+      return;
+    histos.fill(HIST("BcHist"), 3); // TVX
+    if (selectFV0OrA && !multbc.multFV0OrA())
+      return;
+    histos.fill(HIST("BcHist"), 4); // FV0OrA
+    histos.fill(HIST("BcCentFT0CHist"), multbc.centFT0C());
+    histos.fill(HIST("BcCentFT0MHist"), multbc.centFT0M());
+  }
+
   PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
@@ -979,6 +1023,7 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processGen, "process pure MC gen", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processMCeff, "process extra efficiency function", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processBcData, "process BC Centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
